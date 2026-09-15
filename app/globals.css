@@ -1,0 +1,211 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background-color: #fbf6f1;
+  color: #2a211e;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.gradient-bg {
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(243, 201, 168, 0.6), transparent 60%),
+    radial-gradient(900px 500px at 110% 20%, rgba(231, 180, 168, 0.5), transparent 60%),
+    #fbf6f1;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #eadfd4;
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 30px -18px rgba(80, 40, 30, 0.18);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #b45c4d;
+  color: #fff;
+  padding: 0.95rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: transform 0.15s ease, background 0.2s ease;
+  width: 100%;
+}
+.btn-primary:hover {
+  background: #8a3f32;
+}
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: #2a211e;
+  padding: 0.85rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 500;
+  border: 1px solid #eadfd4;
+  width: 100%;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(180, 92, 77, 0.08);
+  color: #8a3f32;
+  border: 1px solid rgba(180, 92, 77, 0.2);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #eadfd4;
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  font-weight: 500;
+  color: #2a211e;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+.choice[data-selected="true"] {
+  border-color: #b45c4d;
+  background: #fff7f2;
+  box-shadow: 0 0 0 4px rgba(231, 180, 168, 0.35);
+}
+.choice .dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1.5px solid #eadfd4;
+  flex-shrink: 0;
+  position: relative;
+}
+.choice[data-selected="true"] .dot {
+  border-color: #b45c4d;
+  background: #b45c4d;
+}
+.choice[data-selected="true"] .dot::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #f1e6da;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #e7b4a8, #b45c4d);
+  border-radius: 999px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #fff;
+  border: 1px solid #eadfd4;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+}
+.check-row .box {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid #d8c6b8;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  background: #fff;
+}
+.check-row[data-done="true"] {
+  background: #fff7f2;
+  border-color: #e7b4a8;
+}
+.check-row[data-done="true"] .box {
+  background: #b45c4d;
+  border-color: #b45c4d;
+}
+.check-row[data-done="true"] .label {
+  color: #6b5e58;
+  text-decoration: line-through;
+}
+
+.score-ring {
+  --v: 0;
+  width: 168px;
+  height: 168px;
+  border-radius: 999px;
+  background:
+    conic-gradient(#b45c4d calc(var(--v) * 1%), #f1e6da 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.score-ring::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  background: #fff;
+  border-radius: 999px;
+}
+.score-ring > div {
+  position: relative;
+  text-align: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff;
+  border: 1px solid #eadfd4;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: #2a211e;
+}
+.chip .swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
