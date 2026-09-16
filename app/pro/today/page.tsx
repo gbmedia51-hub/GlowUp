@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
-import { supabaseServer } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { TodayClient } from "./TodayClient";
 
 function dayIndex(startDate: string) {
@@ -10,22 +10,19 @@ function dayIndex(startDate: string) {
 }
 
 export default async function TodayPage() {
-  const supabase = supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await requireUser();
 
   const [{ data: program }, { data: sub }] = await Promise.all([
     supabase
       .from("programs")
       .select("*")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .eq("active", true)
       .maybeSingle(),
     supabase
       .from("subscriptions")
       .select("*")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .maybeSingle(),
   ]);
 

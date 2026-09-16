@@ -1,16 +1,13 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
-import { supabaseServer } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 
 export default async function RenewPage() {
-  const supabase = supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await requireUser();
   const { data: sub } = await supabase
     .from("subscriptions")
     .select("expires_at")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   const daysLeft = sub

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export function supabaseServer() {
   const cookieStore = cookies();
@@ -17,10 +18,19 @@ export function supabaseServer() {
               cookieStore.set(name, value, options);
             });
           } catch {
-            /* called from a Server Component — Next will let route handlers/middleware set */
+            /* server component write — Next will let route handlers set instead */
           }
         },
       },
     },
   );
+}
+
+export async function requireUser() {
+  const supabase = supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
+  return { supabase, user };
 }

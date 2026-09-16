@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
-import { supabaseServer } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 
 function dayIndex(startDate: string) {
   const start = new Date(startDate + "T00:00:00Z");
@@ -19,15 +19,12 @@ function computeStreak(daysDone: Set<number>, today: number) {
 }
 
 export default async function ProgressPage() {
-  const supabase = supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await requireUser();
 
   const { data: program } = await supabase
     .from("programs")
     .select("*")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
 
