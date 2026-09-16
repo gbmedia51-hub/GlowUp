@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
-import { requireUser } from "@/lib/supabase/server";
+import { requireActiveSubscription } from "@/lib/supabase/server";
 
 export default async function RenewPage() {
-  const { supabase, user } = await requireUser();
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("expires_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const { subscription: sub } = await requireActiveSubscription();
 
   const daysLeft = sub
     ? Math.max(
@@ -56,11 +51,11 @@ export default async function RenewPage() {
         </div>
 
         <div className="mt-6 space-y-3">
-          <Link href="/paywall/checkout" className="btn-primary">
+          <Link href="/pay" className="btn-primary">
             Renouveler mon plan →
           </Link>
           <p className="text-center text-xs text-ink-muted">
-            MTN MoMo · Orange Money · Carte bancaire
+            MTN Mobile Money · Orange Money
           </p>
         </div>
       </div>

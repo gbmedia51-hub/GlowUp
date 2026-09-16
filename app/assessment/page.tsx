@@ -1,7 +1,6 @@
-"use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { readAssessment } from "@/lib/onboarding-store";
+import { redirect } from "next/navigation";
+import { supabaseServer } from "@/lib/supabase/server";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -12,25 +11,39 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function AssessmentPage() {
-  const [a, setA] = useState<any | null | undefined>(undefined);
-  useEffect(() => setA(readAssessment()), []);
+export default async function AssessmentPage() {
+  const supabase = supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/");
 
-  if (a === undefined)
-    return <main className="p-8 text-ink-muted">Chargement…</main>;
-  if (!a)
+  const { data: a } = await supabase
+    .from("assessments")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!a) {
     return (
-      <main className="p-8">
-        <p className="text-ink">Aucune évaluation trouvée.</p>
-        <Link href="/selfie" className="btn-primary mt-6">
+      <main className="min-h-screen bg-bg px-6 pt-16 pb-10 text-center">
+        <h1 className="font-display text-2xl text-ink">Aucune analyse trouvée</h1>
+        <p className="mt-3 text-ink-muted">
+          Reprenez le parcours pour obtenir votre profil GlowUp.
+        </p>
+        <Link href="/selfie" className="btn-primary mt-6 max-w-xs mx-auto">
           Refaire l'analyse
         </Link>
       </main>
     );
+  }
 
   const score = a.score ?? 70;
-  const breakdown = a.score_breakdown ?? {};
-  const palette = a.color_profile?.palette ?? [];
+  const breakdown: any = a.score_breakdown ?? {};
+  const palette: any[] = (a.color_profile as any)?.palette ?? [];
+  const makeup: any = a.makeup ?? {};
 
   return (
     <main className="min-h-screen bg-bg pb-10">
@@ -73,8 +86,7 @@ export default function AssessmentPage() {
           </div>
         </div>
         <p className="mt-3 text-xs text-ink-muted">
-          Ce score est un repère personnel généré par l'IA — pas une note
-          d'attractivité.
+          Ce score est un repère personnel généré par l'IA — pas une note d'attractivité.
         </p>
       </div>
 
@@ -101,7 +113,7 @@ export default function AssessmentPage() {
         {Array.isArray(a.skin_observations) && a.skin_observations.length > 0 && (
           <Section title="Observations peau">
             <ul className="space-y-2 text-ink text-sm">
-              {a.skin_observations.map((s: string, i: number) => (
+              {(a.skin_observations as string[]).map((s, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="text-accent">•</span> {s}
                 </li>
@@ -115,20 +127,18 @@ export default function AssessmentPage() {
             <div className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-ink-muted">
-                    Direction
-                  </p>
+                  <p className="text-xs uppercase tracking-widest text-ink-muted">Direction</p>
                   <p className="font-display text-2xl text-ink">
-                    {a.color_profile.direction ?? "—"}
+                    {(a.color_profile as any)?.direction ?? "—"}
                   </p>
                 </div>
-                {a.color_profile.season && (
-                  <span className="pill">{a.color_profile.season}</span>
+                {(a.color_profile as any)?.season && (
+                  <span className="pill">{(a.color_profile as any).season}</span>
                 )}
               </div>
               {palette.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {palette.map((c: any) => (
+                  {palette.map((c) => (
                     <span key={c.hex} className="chip">
                       <span className="swatch" style={{ background: c.hex }} />
                       {c.name}
@@ -140,15 +150,15 @@ export default function AssessmentPage() {
           </Section>
         )}
 
-        {a.makeup && (
+        {makeup && (
           <Section title="Maquillage">
             <div className="card p-4 space-y-3 text-sm text-ink">
               {[
-                ["Style", a.makeup.style],
-                ["Lèvres", a.makeup.lips],
-                ["Blush", a.makeup.blush],
-                ["Yeux", a.makeup.eyes],
-                ["Teint", a.makeup.base],
+                ["Style", makeup.style],
+                ["Lèvres", makeup.lips],
+                ["Blush", makeup.blush],
+                ["Yeux", makeup.eyes],
+                ["Teint", makeup.base],
               ].map(([k, v]: any) =>
                 v ? (
                   <div key={k} className="flex justify-between gap-4">
@@ -164,7 +174,7 @@ export default function AssessmentPage() {
         {Array.isArray(a.opportunities) && a.opportunities.length > 0 && (
           <Section title="Top opportunités GlowUp">
             <ol className="space-y-3">
-              {a.opportunities.map((t: string, i: number) => (
+              {(a.opportunities as string[]).map((t, i) => (
                 <li key={i} className="card p-4 flex gap-3 items-start">
                   <span className="w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center text-sm font-semibold">
                     {i + 1}

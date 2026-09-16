@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
-import { requireUser } from "@/lib/supabase/server";
+import { requireActiveSubscription } from "@/lib/supabase/server";
 
 function dayIndex(startDate: string) {
   const start = new Date(startDate + "T00:00:00Z");
@@ -19,7 +19,7 @@ function computeStreak(daysDone: Set<number>, today: number) {
 }
 
 export default async function ProgressPage() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireActiveSubscription();
 
   const { data: program } = await supabase
     .from("programs")

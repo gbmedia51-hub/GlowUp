@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { readOnboarding, writeAssessment, writeImage } from "@/lib/onboarding-store";
+import { readOnboarding } from "@/lib/onboarding-store";
+import { ensureSession } from "@/lib/supabase/browser";
 
 async function downscale(file: File, max = 768, quality = 0.82): Promise<string> {
   const bitmap = await createImageBitmap(file);
@@ -30,7 +31,7 @@ export default function SelfiePage() {
     try {
       const dataUrl = await downscale(file);
       setPreview(dataUrl);
-    } catch (e) {
+    } catch {
       setError("Impossible de lire cette image. Réessayez.");
     } finally {
       setBusy(null);
@@ -42,6 +43,7 @@ export default function SelfiePage() {
     setBusy("analyze");
     setError(null);
     try {
+      await ensureSession();
       const res = await fetch("/api/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -58,13 +60,13 @@ export default function SelfiePage() {
         setBusy(null);
         return;
       }
-      writeAssessment(data);
-      // We do NOT persist the image server-side; keep it locally to redisplay
-      // on the results screen only, then it's cleared after purchase.
-      writeImage(preview);
       router.push("/assessment");
-    } catch (e) {
-      setError("Connexion impossible. Vérifiez votre réseau.");
+    } catch (e: any) {
+      setError(
+        e?.message === "anonymous_signin_failed"
+          ? "Impossible d'ouvrir une session. Activez les sign-ins anonymes dans Supabase."
+          : "Connexion impossible. Vérifiez votre réseau.",
+      );
       setBusy(null);
     }
   }

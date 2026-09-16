@@ -60,11 +60,11 @@ export default function PaywallPage() {
         </ul>
 
         <div className="mt-8 space-y-3">
-          <Link href="/auth/signup" className="btn-primary">
+          <Link href="/pay" className="btn-primary">
             Débloquer GlowUp Pro · 1 999 FCFA →
           </Link>
           <p className="text-center text-xs text-ink-muted">
-            Paiement sécurisé via Monetbil · MTN MoMo, Orange Money, carte
+            Payer avec MTN Mobile Money ou Orange Money
           </p>
         </div>
       </div>
