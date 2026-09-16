@@ -42,13 +42,16 @@ export default function SelfiePage() {
     if (!preview) return;
     setBusy("analyze");
     setError(null);
+    let step: "session" | "upload" | "response" = "session";
     try {
       await ensureSession();
+      step = "upload";
       const res = await fetch("/api/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ onboarding: readOnboarding(), image: preview }),
       });
+      step = "response";
       const data = await res.json();
       if (!res.ok || data.error === "no_face") {
         const suffix = data?.detail ? ` — ${data.detail}` : "";
@@ -68,7 +71,7 @@ export default function SelfiePage() {
       setError(
         looksLikeAnonDisabled
           ? "Sessions anonymes désactivées côté Supabase. Activez-les dans Auth → Providers."
-          : `Connexion impossible : ${msg || "réseau"}`,
+          : `Échec [${step}] : ${msg || "réseau"}`,
       );
       setBusy(null);
     }
