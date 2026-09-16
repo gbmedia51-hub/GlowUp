@@ -1,44 +1,37 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// TEMPORARY: this page runs the mock-purchase flow so the full journey works
-// end-to-end. Once Monetbil is wired, this page will initialize a real
-// Monetbil session and redirect to their hosted checkout.
-
 export default function CheckoutPage() {
-  const router = useRouter();
-  const [phase, setPhase] = useState<"idle" | "paying" | "generating" | "error">(
-    "idle",
+  const [phase, setPhase] = useState<"idle" | "creating" | "redirecting" | "error">(
+    "creating",
   );
   const [error, setError] = useState<string | null>(null);
 
-  async function unlock() {
+  async function start() {
+    setError(null);
+    setPhase("creating");
     try {
-      setError(null);
-      setPhase("paying");
-      const p = await fetch("/api/mock-purchase", { method: "POST" });
-      if (!p.ok) throw new Error("payment_failed");
-
-      setPhase("generating");
-      const g = await fetch("/api/generate-program", { method: "POST" });
-      if (!g.ok) throw new Error("program_failed");
-
-      router.push("/pro/today");
+      const r = await fetch("/api/monetbil/init", { method: "POST" });
+      const data = await r.json();
+      if (!r.ok || !data.redirect_url) {
+        throw new Error(data.error || "init_failed");
+      }
+      setPhase("redirecting");
+      // Give the UI a beat, then send them to Monetbil's hosted page.
+      setTimeout(() => {
+        window.location.href = data.redirect_url;
+      }, 500);
     } catch (e: any) {
       setPhase("error");
       setError(
-        e?.message === "program_failed"
-          ? "Le programme n'a pas pu être généré. Réessayez."
-          : "Le paiement de test a échoué. Réessayez.",
+        "Impossible d'initialiser le paiement. Réessayez dans un instant.",
       );
     }
   }
 
   useEffect(() => {
-    // auto-run on mount
-    unlock();
+    start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -48,20 +41,20 @@ export default function CheckoutPage() {
         ✦
       </div>
       <h1 className="mt-6 font-display text-[26px] text-ink">
-        {phase === "paying" && "Confirmation du paiement…"}
-        {phase === "generating" && "Génération de votre programme…"}
+        {phase === "creating" && "Préparation du paiement…"}
+        {phase === "redirecting" && "Redirection vers Monetbil…"}
         {phase === "error" && "Un souci est survenu"}
       </h1>
       <p className="mt-3 text-ink-muted max-w-xs">
-        {phase === "paying" &&
-          "Mode démonstration : le paiement Monetbil n'est pas encore actif."}
-        {phase === "generating" &&
-          "L'IA prépare votre plan personnalisé de 30 jours."}
+        {phase === "creating" &&
+          "Un instant, on ouvre la page de paiement sécurisée."}
+        {phase === "redirecting" &&
+          "Vous allez être redirigé·e pour finaliser 1 999 FCFA · MTN MoMo, Orange Money ou carte."}
         {phase === "error" && error}
       </p>
       {phase === "error" && (
         <div className="mt-6 space-y-2 w-full max-w-xs">
-          <button onClick={unlock} className="btn-primary">
+          <button onClick={start} className="btn-primary">
             Réessayer
           </button>
           <Link href="/paywall" className="btn-ghost">
@@ -71,7 +64,7 @@ export default function CheckoutPage() {
       )}
       {phase !== "error" && (
         <div className="mt-8 w-56 progress-bar">
-          <span style={{ width: phase === "generating" ? "80%" : "40%" }} />
+          <span style={{ width: phase === "redirecting" ? "90%" : "40%" }} />
         </div>
       )}
     </main>
