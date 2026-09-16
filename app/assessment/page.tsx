@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseServer, redirectIfActiveSub } from "@/lib/supabase/server";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -12,6 +12,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default async function AssessmentPage() {
+  await redirectIfActiveSub();
   const supabase = supabaseServer();
   const {
     data: { user },

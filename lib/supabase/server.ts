@@ -59,3 +59,22 @@ export async function requireActiveSubscription() {
   if (!active) redirect("/pay");
   return { supabase, user, subscription: sub! };
 }
+
+// For pre-paywall pages (landing, paywall, assessment): if this returning
+// visitor already has an active subscription in their cookie session,
+// send them straight to their daily plan.
+export async function redirectIfActiveSub() {
+  const supabase = supabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("status, expires_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const active =
+    sub &&
+    sub.status === "active" &&
+    new Date(sub.expires_at).getTime() > Date.now();
+  if (active) redirect("/pro/today");
+}

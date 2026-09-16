@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirectIfActiveSub } from "@/lib/supabase/server";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  await redirectIfActiveSub();
   return (
     <main className="gradient-bg min-h-screen px-6 pt-14 pb-10 flex flex-col">
       <header className="flex items-center justify-between">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirectIfActiveSub } from "@/lib/supabase/server";
 
 const features = [
   ["Programme soins personnalisé", "Adapté à votre peau et à vos objectifs"],
@@ -13,7 +14,8 @@ const features = [
 // Server-rendered on purpose so the page renders even if the browser Supabase
 // client fails to initialize. The signup page handles the "already signed in"
 // case by skipping straight to /paywall/checkout.
-export default function PaywallPage() {
+export default async function PaywallPage() {
+  await redirectIfActiveSub();
   return (
     <main className="min-h-screen bg-bg pb-8">
       <div className="gradient-bg px-6 pt-10 pb-8">
