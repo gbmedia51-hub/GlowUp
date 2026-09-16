@@ -3,11 +3,15 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+function clean(v: string | undefined): string {
+  return (v ?? "").replace(/\s+/g, "");
+}
+
 export function supabaseServer() {
   const cookieStore = cookies();
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     {
       cookies: {
         getAll() {
@@ -32,7 +36,7 @@ export function supabaseServer() {
 export function supabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+  return createClient(clean(process.env.NEXT_PUBLIC_SUPABASE_URL), clean(key), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
