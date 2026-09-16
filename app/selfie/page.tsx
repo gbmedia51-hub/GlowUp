@@ -49,10 +49,11 @@ export default function SelfiePage() {
       });
       const data = await res.json();
       if (!res.ok || data.error === "no_face") {
+        const suffix = data?.detail ? ` — ${data.detail}` : "";
         setError(
           data.error === "no_face"
             ? "Aucun visage détecté. Reprenez une photo bien cadrée."
-            : "L'analyse a échoué. Réessayez dans un instant.",
+            : `L'analyse a échoué. Réessayez dans un instant.${suffix}`,
         );
         setBusy(null);
         return;

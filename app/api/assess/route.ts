@@ -45,7 +45,11 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(result);
   } catch (e: any) {
-    console.error("[assess]", e?.message);
-    return NextResponse.json({ error: "assessment_failed" }, { status: 502 });
+    const msg = e?.message ?? String(e);
+    console.error("[assess]", msg);
+    return NextResponse.json(
+      { error: "assessment_failed", detail: msg.slice(0, 300) },
+      { status: 502 },
+    );
   }
 }
