@@ -62,10 +62,13 @@ export default function SelfiePage() {
       }
       router.push("/assessment");
     } catch (e: any) {
+      const msg = String(e?.message ?? e ?? "");
+      const looksLikeAnonDisabled =
+        /anonymous/i.test(msg) || /signup.*disabled/i.test(msg);
       setError(
-        e?.message === "anonymous_signin_failed"
-          ? "Impossible d'ouvrir une session. Activez les sign-ins anonymes dans Supabase."
-          : "Connexion impossible. Vérifiez votre réseau.",
+        looksLikeAnonDisabled
+          ? "Sessions anonymes désactivées côté Supabase. Activez-les dans Auth → Providers."
+          : `Connexion impossible : ${msg || "réseau"}`,
       );
       setBusy(null);
     }
