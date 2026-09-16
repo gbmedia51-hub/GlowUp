@@ -1,7 +1,4 @@
-"use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/browser";
 
 const features = [
   ["Programme soins personnalisé", "Adapté à votre peau et à vos objectifs"],
@@ -13,14 +10,10 @@ const features = [
   ["Assistant Ask GlowUp", "Une IA qui répond à vos questions beauté"],
 ];
 
+// Server-rendered on purpose so the page renders even if the browser Supabase
+// client fails to initialize. The signup page handles the "already signed in"
+// case by skipping straight to /paywall/checkout.
 export default function PaywallPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
-  useEffect(() => {
-    const supabase = supabaseBrowser();
-    supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
-  }, []);
-  const cta = authed ? "/paywall/checkout" : "/auth/signup";
-
   return (
     <main className="min-h-screen bg-bg pb-8">
       <div className="gradient-bg px-6 pt-10 pb-8">
@@ -67,7 +60,7 @@ export default function PaywallPage() {
         </ul>
 
         <div className="mt-8 space-y-3">
-          <Link href={cta} className="btn-primary">
+          <Link href="/auth/signup" className="btn-primary">
             Débloquer GlowUp Pro · 1 999 FCFA →
           </Link>
           <p className="text-center text-xs text-ink-muted">
