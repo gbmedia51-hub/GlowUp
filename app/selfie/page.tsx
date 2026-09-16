@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { readOnboarding } from "@/lib/onboarding-store";
 import { ensureSession } from "@/lib/supabase/browser";
 
-async function downscale(file: File, max = 768, quality = 0.82): Promise<string> {
+async function downscale(file: File, max = 640, quality = 0.75): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const w = Math.round(bitmap.width * scale);
@@ -15,7 +15,15 @@ async function downscale(file: File, max = 768, quality = 0.82): Promise<string>
   canvas.height = h;
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(bitmap, 0, 0, w, h);
-  return canvas.toDataURL("image/jpeg", quality);
+  let out = canvas.toDataURL("image/jpeg", quality);
+  // Progressive shrink if still huge — some phone cams produce unexpectedly
+  // fat base64 even after canvas encode.
+  let q = quality;
+  while (out.length > 900_000 && q > 0.4) {
+    q -= 0.1;
+    out = canvas.toDataURL("image/jpeg", q);
+  }
+  return out;
 }
 
 export default function SelfiePage() {
@@ -46,10 +54,17 @@ export default function SelfiePage() {
     try {
       await ensureSession();
       step = "upload";
+      const bodyStr = JSON.stringify({
+        onboarding: readOnboarding(),
+        image: preview,
+      });
+      const sizeKb = Math.round(bodyStr.length / 1024);
       const res = await fetch("/api/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ onboarding: readOnboarding(), image: preview }),
+        body: bodyStr,
+      }).catch((err) => {
+        throw new Error(`${err?.message ?? "fetch"} (body ${sizeKb} KB)`);
       });
       step = "response";
       const data = await res.json();
