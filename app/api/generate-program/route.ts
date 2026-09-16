@@ -29,7 +29,7 @@ export async function POST() {
 
   try {
     const result = await chatJson<{ days: any[] }>({
-      model: process.env.OPENAI_MODEL_ASSESSMENT || "gpt-4o",
+      model: process.env.OPENAI_MODEL_ASSESSMENT || "gpt-4o-mini",
       messages: [
         { role: "system", content: PROGRAM_SYSTEM },
         {

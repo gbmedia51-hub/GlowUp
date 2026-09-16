@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { readOnboarding, writeAssessment, writeImage } from "@/lib/onboarding-store";
 
-async function downscale(file: File, max = 1024, quality = 0.85): Promise<string> {
+async function downscale(file: File, max = 768, quality = 0.82): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const w = Math.round(bitmap.width * scale);
