@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { directPay, mediumFromOperator, normalizePhone } from "@/lib/fapshi";
 
-// Creates a pending payment row and returns its id + the operator +
-// phone the user chose. When the real MTN/Orange provider is wired,
-// this route will also initiate the provider's STK push here and
-// return the transaction reference; for now it just records intent.
+// Initiates a Fapshi direct-pay charge. Fapshi will trigger an STK push
+// on the user's MoMo / Orange Money phone; the user approves in their
+// carrier prompt and Fapshi calls our /api/payments/webhook.
 
 export const runtime = "nodejs";
 
@@ -24,37 +24,75 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const provider = String(body?.provider ?? "");
-  const phone = String(body?.phone ?? "").replace(/\s+/g, "");
-  if (!OPERATORS.has(provider)) {
+  const operator = String(body?.provider ?? "");
+  const rawPhone = String(body?.phone ?? "");
+  const phone = normalizePhone(rawPhone);
+  if (!OPERATORS.has(operator)) {
     return NextResponse.json({ error: "invalid_provider" }, { status: 400 });
   }
-  if (!/^[0-9]{8,15}$/.test(phone)) {
+  if (!/^[0-9]{9}$/.test(phone)) {
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
   }
 
+  const amount = Number(process.env.PAYMENT_AMOUNT || 1999);
+  const currency = process.env.PAYMENT_CURRENCY || "XAF";
+
+  // Create the pending payment row up front so its id becomes our
+  // externalId reference to Fapshi — every notification can be matched
+  // back to it unambiguously.
   const { data: payment, error } = await supabase
     .from("payments")
     .insert({
       user_id: user.id,
-      provider,
+      provider: "fapshi",
       status: "pending",
-      amount: Number(process.env.PAYMENT_AMOUNT || 1999),
-      currency: process.env.PAYMENT_CURRENCY || "XAF",
-      raw: { phone, source: "user_init" },
+      amount,
+      currency,
+      raw: { operator, phone, source: "user_init" },
     })
     .select()
     .single();
   if (error || !payment) {
-    console.error("[payments.init]", error?.message);
+    console.error("[payments.init] db", error?.message);
     return NextResponse.json({ error: "db_error" }, { status: 500 });
   }
 
-  return NextResponse.json({
-    payment_id: payment.id,
-    status: payment.status,
-    // Provider not wired yet; frontend shows a "waiting for confirmation"
-    // screen until a real provider webhook flips the status.
-    provider_ready: false,
-  });
+  try {
+    const result = await directPay({
+      amount,
+      phone,
+      medium: mediumFromOperator(operator),
+      userId: user.id,
+      externalId: payment.id,
+      message: "GlowUp Pro — abonnement 30 jours",
+    });
+
+    await supabase
+      .from("payments")
+      .update({
+        provider_ref: result.transId,
+        raw: { ...(payment.raw ?? {}), fapshi: { init: result } },
+      })
+      .eq("id", payment.id);
+
+    return NextResponse.json({
+      payment_id: payment.id,
+      trans_id: result.transId,
+      status: "pending",
+    });
+  } catch (e: any) {
+    const msg = e?.message ?? String(e);
+    console.error("[payments.init] fapshi", msg);
+    await supabase
+      .from("payments")
+      .update({
+        status: "failed",
+        raw: { ...(payment.raw ?? {}), init_error: msg },
+      })
+      .eq("id", payment.id);
+    return NextResponse.json(
+      { error: "provider_error", detail: msg.slice(0, 300) },
+      { status: 502 },
+    );
+  }
 }

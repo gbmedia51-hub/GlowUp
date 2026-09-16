@@ -111,22 +111,25 @@ export default function PayPage() {
     return (
       <main className="min-h-screen bg-bg px-6 pt-16 pb-10 flex flex-col items-center text-center">
         <div className="w-16 h-16 rounded-full bg-rose/40 border border-accent/20 flex items-center justify-center text-3xl">
-          ⏳
+          📲
         </div>
-        <h1 className="mt-6 font-display text-[26px] text-ink">Paiement en attente</h1>
+        <h1 className="mt-6 font-display text-[26px] text-ink">
+          Vérifiez votre téléphone
+        </h1>
         <p className="mt-3 text-ink-muted max-w-xs">
-          Nous avons enregistré votre demande. Le fournisseur de paiement Mobile
-          Money confirmera dans quelques instants.
+          Une demande de paiement de <b className="text-ink">1 999 FCFA</b> a été
+          envoyée sur votre numéro. Ouvrez la notification Mobile Money et
+          confirmez avec votre code secret.
         </p>
         <p className="mt-3 text-xs text-ink-muted max-w-xs">
           Cette page se rafraîchit automatiquement — vous serez redirigé·e vers
-          votre plan dès que le paiement est validé.
+          votre plan dès la confirmation.
         </p>
         <div className="mt-6 w-56 progress-bar">
-          <span style={{ width: "45%" }} />
+          <span style={{ width: "60%" }} />
         </div>
         <Link href="/assessment" className="mt-8 text-sm text-ink-muted">
-          Retour à mon analyse
+          Annuler et retourner à mon analyse
         </Link>
       </main>
     );

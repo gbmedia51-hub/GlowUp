@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { checkPaymentStatus } from "@/lib/fapshi";
 import { PROGRAM_SYSTEM } from "@/lib/ai/prompts";
 import { chatJson } from "@/lib/ai/openai";
 
-// Provider-agnostic webhook. When a real MTN/Orange payment aggregator
-// is chosen, add the provider's HMAC signature check at the top and
-// map its field names to { payment_ref, status } below. The rest —
-// marking success, activating the subscription, generating the plan —
-// stays the same.
-//
-// Contract expected from the future provider integration:
-//   POST /api/payments/webhook
-//   body: { payment_ref: string (our payments.id), status: 'success' | 'failed' | 'pending', provider_ref?: string }
-//   headers: X-Signature: <hmac> (verified with PAYMENT_WEBHOOK_SECRET)
+// Fapshi webhook: POST with the transaction body. We do NOT trust the
+// payload — instead we take the transId, re-query Fapshi's payment-status
+// endpoint server-to-server (that call is authenticated with our API
+// credentials), and act only on that verified status.
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -29,56 +24,71 @@ export async function POST(req: Request) {
     }
   } catch (e: any) {
     console.error("[payments.webhook] parse", e?.message);
-    return NextResponse.json({ ok: false }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "invalid_body" }, { status: 400 });
   }
 
   console.log("[payments.webhook] payload", JSON.stringify(payload).slice(0, 800));
 
-  // TODO: when provider is chosen, verify HMAC signature here using
-  // process.env.PAYMENT_WEBHOOK_SECRET. Until then, this route only
-  // logs, so it cannot cause any state change in production.
-  const providerReady = Boolean(process.env.PAYMENT_WEBHOOK_SECRET);
-  if (!providerReady) {
+  const transId: string = String(payload?.transId ?? "");
+  if (!transId) {
+    return NextResponse.json({ ok: true, note: "no transId, ignored" });
+  }
+
+  // Ground truth from Fapshi's own status endpoint.
+  const verified = await checkPaymentStatus(transId);
+  console.log(
+    "[payments.webhook] verified",
+    transId,
+    verified.status,
+    verified.externalId,
+  );
+
+  const admin = supabaseAdmin();
+  const externalId = verified.externalId || String(payload?.externalId ?? "");
+  if (!externalId) {
     return NextResponse.json({
       ok: true,
-      note: "logged; provider not wired yet",
+      note: "verified but no externalId to match",
     });
   }
 
-  const paymentRef = String(payload.payment_ref ?? "");
-  const status = String(payload.status ?? "").toLowerCase();
-  const providerRef = payload.provider_ref ? String(payload.provider_ref) : null;
-  if (!paymentRef) {
-    return NextResponse.json({ error: "missing_payment_ref" }, { status: 400 });
-  }
-
-  const admin = supabaseAdmin();
   const { data: payment } = await admin
     .from("payments")
     .select("*")
-    .eq("id", paymentRef)
+    .eq("id", externalId)
     .maybeSingle();
-  if (!payment) return NextResponse.json({ error: "payment_not_found" }, { status: 404 });
+  if (!payment) {
+    return NextResponse.json({ ok: true, note: "payment not found" });
+  }
 
   // Idempotent
   if (payment.status === "success") {
     return NextResponse.json({ ok: true, already: true });
   }
 
-  const newStatus =
-    status === "success" ? "success" : status === "failed" ? "failed" : "pending";
+  const nextStatus =
+    verified.status === "SUCCESSFUL"
+      ? "success"
+      : verified.status === "FAILED" || verified.status === "EXPIRED"
+        ? "failed"
+        : "pending";
+
   await admin
     .from("payments")
     .update({
-      status: newStatus,
-      provider_ref: providerRef,
-      raw: { ...(payment.raw ?? {}), webhook: payload },
+      status: nextStatus,
+      provider_ref: transId,
+      raw: {
+        ...(payment.raw ?? {}),
+        webhook_payload: payload,
+        verified: verified.raw,
+      },
     })
     .eq("id", payment.id);
 
-  if (newStatus !== "success") return NextResponse.json({ ok: true });
+  if (nextStatus !== "success") return NextResponse.json({ ok: true });
 
-  // Activate the subscription and generate the personalized program.
+  // Activate the subscription and generate the 30-day program.
   const now = new Date();
   const expires = new Date(now);
   expires.setDate(expires.getDate() + 30);
@@ -88,7 +98,7 @@ export async function POST(req: Request) {
       status: "active",
       purchased_at: now.toISOString(),
       expires_at: expires.toISOString(),
-      last_provider_ref: providerRef,
+      last_provider_ref: transId,
     },
     { onConflict: "user_id" },
   );
@@ -108,7 +118,6 @@ export async function POST(req: Request) {
         .limit(1)
         .maybeSingle(),
     ]);
-
     if (assessment) {
       const gen: any = await chatJson({
         model: process.env.OPENAI_MODEL_ASSESSMENT || "gpt-4o-mini",
@@ -142,7 +151,6 @@ export async function POST(req: Request) {
     }
   } catch (e: any) {
     console.error("[payments.webhook] program gen", e?.message);
-    // Sub still active; program can be regenerated on next dashboard open.
   }
 
   return NextResponse.json({ ok: true });
