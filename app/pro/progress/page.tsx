@@ -1,17 +1,67 @@
+import Link from "next/link";
 import { BottomNav } from "../BottomNav";
+import { supabaseServer } from "@/lib/supabase/server";
 
-export default function ProgressPage() {
-  const day = 17;
+function dayIndex(startDate: string) {
+  const start = new Date(startDate + "T00:00:00Z");
+  const diff = Math.floor((Date.now() - start.getTime()) / 86_400_000);
+  return Math.max(1, Math.min(30, diff + 1));
+}
+
+function computeStreak(daysDone: Set<number>, today: number) {
+  let streak = 0;
+  for (let d = today - 1; d >= 1; d--) {
+    if (daysDone.has(d)) streak++;
+    else break;
+  }
+  if (daysDone.has(today)) streak++;
+  return streak;
+}
+
+export default async function ProgressPage() {
+  const supabase = supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: program } = await supabase
+    .from("programs")
+    .select("*")
+    .eq("user_id", user!.id)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (!program) {
+    return (
+      <main className="min-h-screen bg-bg px-6 pt-16 pb-10 text-center">
+        <h1 className="font-display text-2xl text-ink">Aucun programme actif</h1>
+        <Link href="/paywall" className="btn-primary mt-6 max-w-xs">
+          Débloquer Pro
+        </Link>
+      </main>
+    );
+  }
+
+  const today = dayIndex(program.start_date);
+  const { data: progressRows } = await supabase
+    .from("daily_progress")
+    .select("day, completed_at")
+    .eq("program_id", program.id);
+
+  const doneSet = new Set<number>(
+    (progressRows ?? []).filter((r) => r.completed_at).map((r) => r.day),
+  );
+  const doneCount = doneSet.size;
+  const streak = computeStreak(doneSet, today);
   const total = 30;
-  const pct = Math.round((day / total) * 100);
-  const streak = 5;
+  const pct = Math.round((today / total) * 100);
+  const consistency = today > 1 ? Math.round((doneCount / Math.max(1, today - 1)) * 100) : 100;
 
-  // Fake 30-day grid (17 done, one skipped on day 9)
   const cells = Array.from({ length: total }, (_, i) => {
     const d = i + 1;
-    if (d === 9) return "skip";
-    if (d <= day) return "done";
-    if (d === day + 1) return "today";
+    if (doneSet.has(d)) return "done";
+    if (d === today) return "today";
+    if (d < today) return "skip";
     return "todo";
   });
 
@@ -26,11 +76,9 @@ export default function ProgressPage() {
         <div className="mt-6 card p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-ink-muted">
-                Jour
-              </p>
+              <p className="text-xs uppercase tracking-widest text-ink-muted">Jour</p>
               <p className="font-display text-4xl text-ink">
-                {day}
+                {today}
                 <span className="text-ink-muted text-2xl"> / {total}</span>
               </p>
             </div>
@@ -46,7 +94,7 @@ export default function ProgressPage() {
             <span style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-2 text-xs text-ink-muted">
-            {day} jours accomplis · {total - day} restants
+            {doneCount} jours accomplis · {total - today} restants
           </p>
         </div>
       </div>
@@ -74,68 +122,26 @@ export default function ProgressPage() {
                 <div
                   key={i}
                   className="aspect-square rounded-lg flex items-center justify-center text-sm font-medium"
-                  style={{
-                    background: bg,
-                    color,
-                    border: `1.5px solid ${border}`,
-                  }}
+                  style={{ background: bg, color, border: `1.5px solid ${border}` }}
                 >
                   {i + 1}
                 </div>
               );
             })}
           </div>
-          <div className="mt-4 flex gap-4 text-xs text-ink-muted flex-wrap">
-            <span className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded"
-                style={{ background: "#B45C4D" }}
-              />{" "}
-              Accompli
-            </span>
-            <span className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded"
-                style={{ background: "#fff", border: "1.5px solid #B45C4D" }}
-              />{" "}
-              Aujourd'hui
-            </span>
-            <span className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded"
-                style={{ background: "#F5E4D0" }}
-              />{" "}
-              Sauté
-            </span>
-            <span className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded"
-                style={{ background: "#F1E6DA" }}
-              />{" "}
-              À venir
-            </span>
-          </div>
         </section>
 
         <section className="mt-8 grid grid-cols-3 gap-3">
           {[
-            ["17", "Jours"],
-            ["94%", "Régularité"],
-            ["5", "Série"],
+            [String(doneCount), "Jours"],
+            [`${consistency}%`, "Régularité"],
+            [String(streak), "Série"],
           ].map(([v, l]) => (
             <div key={l} className="card p-4 text-center">
               <p className="font-display text-2xl text-ink">{v}</p>
               <p className="text-xs text-ink-muted mt-1">{l}</p>
             </div>
           ))}
-        </section>
-
-        <section className="mt-6 card p-5">
-          <span className="pill">Prochaine étape</span>
-          <p className="mt-3 text-ink leading-relaxed">
-            Semaine 3 : on introduit un exfoliant doux 2× par semaine et un
-            baume lèvres teinté pour homogénéiser votre teint.
-          </p>
         </section>
       </div>
 

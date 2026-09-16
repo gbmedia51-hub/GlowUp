@@ -1,12 +1,7 @@
+"use client";
 import Link from "next/link";
-
-const palette = [
-  { name: "Terracotta", hex: "#B45C4D" },
-  { name: "Rose poudré", hex: "#E7B4A8" },
-  { name: "Pêche", hex: "#F3C9A8" },
-  { name: "Ivoire chaud", hex: "#F5E4D0" },
-  { name: "Bronze doux", hex: "#8A5A3B" },
-];
+import { useEffect, useState } from "react";
+import { readAssessment } from "@/lib/onboarding-store";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -18,7 +13,25 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function AssessmentPage() {
-  const score = 72;
+  const [a, setA] = useState<any | null | undefined>(undefined);
+  useEffect(() => setA(readAssessment()), []);
+
+  if (a === undefined)
+    return <main className="p-8 text-ink-muted">Chargement…</main>;
+  if (!a)
+    return (
+      <main className="p-8">
+        <p className="text-ink">Aucune évaluation trouvée.</p>
+        <Link href="/selfie" className="btn-primary mt-6">
+          Refaire l'analyse
+        </Link>
+      </main>
+    );
+
+  const score = a.score ?? 70;
+  const breakdown = a.score_breakdown ?? {};
+  const palette = a.color_profile?.palette ?? [];
+
   return (
     <main className="min-h-screen bg-bg pb-10">
       <div className="gradient-bg px-6 pt-10 pb-8">
@@ -26,10 +39,7 @@ export default function AssessmentPage() {
         <h1 className="mt-3 font-display text-[30px] leading-tight text-ink">
           Votre profil GlowUp
         </h1>
-        <p className="mt-2 text-ink-muted leading-relaxed">
-          Aïcha, voici ce que nous voyons — et ce qui pourrait vraiment vous
-          mettre en valeur.
-        </p>
+        <p className="mt-2 text-ink-muted leading-relaxed">{a.summary}</p>
 
         <div className="mt-6 card p-5 flex items-center gap-5">
           <div className="score-ring" style={{ ["--v" as any]: score }}>
@@ -39,26 +49,26 @@ export default function AssessmentPage() {
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-xs uppercase tracking-widest text-ink-muted">
-              Répartition
-            </p>
+            <p className="text-xs uppercase tracking-widest text-ink-muted">Répartition</p>
             <ul className="mt-2 space-y-2 text-sm">
               {[
-                ["Peau", 68],
-                ["Maquillage", 74],
-                ["Grooming", 78],
-                ["Présentation", 70],
-              ].map(([n, v]) => (
-                <li key={n as string}>
-                  <div className="flex justify-between text-ink">
-                    <span>{n}</span>
-                    <span className="text-ink-muted">{v}</span>
-                  </div>
-                  <div className="progress-bar mt-1">
-                    <span style={{ width: `${v}%` }} />
-                  </div>
-                </li>
-              ))}
+                ["Peau", breakdown.skin],
+                ["Maquillage", breakdown.makeup],
+                ["Grooming", breakdown.grooming],
+                ["Présentation", breakdown.presentation],
+              ].map(([n, v]: any) =>
+                typeof v === "number" ? (
+                  <li key={n}>
+                    <div className="flex justify-between text-ink">
+                      <span>{n}</span>
+                      <span className="text-ink-muted">{v}</span>
+                    </div>
+                    <div className="progress-bar mt-1">
+                      <span style={{ width: `${v}%` }} />
+                    </div>
+                  </li>
+                ) : null,
+              )}
             </ul>
           </div>
         </div>
@@ -69,107 +79,106 @@ export default function AssessmentPage() {
       </div>
 
       <div className="px-6">
-        <Section title="Aperçu">
-          <p className="text-ink leading-relaxed">
-            Votre visage a des lignes équilibrées avec une belle luminosité
-            naturelle. Un rehaussement du teint et des tons chauds révéleraient
-            davantage votre éclat.
-          </p>
-        </Section>
+        {(a.face_shape || a.facial_features) && (
+          <Section title="Analyse du visage">
+            <div className="card p-4 space-y-2 text-sm text-ink">
+              {a.face_shape && (
+                <div className="flex justify-between">
+                  <span className="text-ink-muted">Forme du visage</span>
+                  <span>{a.face_shape}</span>
+                </div>
+              )}
+              {a.facial_features && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-muted">Traits</span>
+                  <span className="text-right">{a.facial_features}</span>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
 
-        <Section title="Analyse du visage">
-          <div className="card p-4 space-y-2 text-sm text-ink">
-            <div className="flex justify-between">
-              <span className="text-ink-muted">Forme du visage</span>
-              <span>Ovale</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-ink-muted">Traits marquants</span>
-              <span>Yeux, pommettes</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-ink-muted">Symétrie perçue</span>
-              <span>Élevée</span>
-            </div>
-          </div>
-        </Section>
-
-        <Section title="Observations peau">
-          <ul className="space-y-2 text-ink text-sm">
-            <li className="flex gap-2">
-              <span className="text-accent">•</span> Zone T légèrement brillante
-            </li>
-            <li className="flex gap-2">
-              <span className="text-accent">•</span> Teint globalement uniforme
-              avec quelques marques post-imperfections
-            </li>
-            <li className="flex gap-2">
-              <span className="text-accent">•</span> Petites zones de
-              déshydratation autour des joues
-            </li>
-          </ul>
-        </Section>
-
-        <Section title="Profil couleur">
-          <div className="card p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-ink-muted">
-                  Direction
-                </p>
-                <p className="font-display text-2xl text-ink">Chaud</p>
-              </div>
-              <span className="pill">Automne doux</span>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {palette.map((c) => (
-                <span key={c.hex} className="chip">
-                  <span className="swatch" style={{ background: c.hex }} />
-                  {c.name}
-                </span>
+        {Array.isArray(a.skin_observations) && a.skin_observations.length > 0 && (
+          <Section title="Observations peau">
+            <ul className="space-y-2 text-ink text-sm">
+              {a.skin_observations.map((s: string, i: number) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-accent">•</span> {s}
+                </li>
               ))}
-            </div>
-          </div>
-        </Section>
+            </ul>
+          </Section>
+        )}
 
-        <Section title="Maquillage">
-          <div className="card p-4 space-y-3 text-sm text-ink">
-            {[
-              ["Style", "Naturel lumineux, effet peau nue"],
-              ["Lèvres", "Terracotta, rose brique"],
-              ["Blush", "Pêche chaud"],
-              ["Yeux", "Bronze doux, brun chocolat"],
-              ["Teint", "Fond léger + correcteur ciblé"],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4">
-                <span className="text-ink-muted">{k}</span>
-                <span className="text-right">{v}</span>
+        {a.color_profile && (
+          <Section title="Profil couleur">
+            <div className="card p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-ink-muted">
+                    Direction
+                  </p>
+                  <p className="font-display text-2xl text-ink">
+                    {a.color_profile.direction ?? "—"}
+                  </p>
+                </div>
+                {a.color_profile.season && (
+                  <span className="pill">{a.color_profile.season}</span>
+                )}
               </div>
-            ))}
-          </div>
-        </Section>
+              {palette.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {palette.map((c: any) => (
+                    <span key={c.hex} className="chip">
+                      <span className="swatch" style={{ background: c.hex }} />
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
 
-        <Section title="Top 3 opportunités GlowUp">
-          <ol className="space-y-3">
-            {[
-              "Instaurer une routine soins quotidienne (matin & soir).",
-              "Adopter des tons chauds pour lèvres et blush.",
-              "Améliorer la régularité du grooming des sourcils.",
-            ].map((t, i) => (
-              <li key={t} className="card p-4 flex gap-3 items-start">
-                <span className="w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center text-sm font-semibold">
-                  {i + 1}
-                </span>
-                <span className="text-ink leading-relaxed">{t}</span>
-              </li>
-            ))}
-          </ol>
-        </Section>
+        {a.makeup && (
+          <Section title="Maquillage">
+            <div className="card p-4 space-y-3 text-sm text-ink">
+              {[
+                ["Style", a.makeup.style],
+                ["Lèvres", a.makeup.lips],
+                ["Blush", a.makeup.blush],
+                ["Yeux", a.makeup.eyes],
+                ["Teint", a.makeup.base],
+              ].map(([k, v]: any) =>
+                v ? (
+                  <div key={k} className="flex justify-between gap-4">
+                    <span className="text-ink-muted">{k}</span>
+                    <span className="text-right">{v}</span>
+                  </div>
+                ) : null,
+              )}
+            </div>
+          </Section>
+        )}
+
+        {Array.isArray(a.opportunities) && a.opportunities.length > 0 && (
+          <Section title="Top opportunités GlowUp">
+            <ol className="space-y-3">
+              {a.opportunities.map((t: string, i: number) => (
+                <li key={i} className="card p-4 flex gap-3 items-start">
+                  <span className="w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center text-sm font-semibold">
+                    {i + 1}
+                  </span>
+                  <span className="text-ink leading-relaxed">{t}</span>
+                </li>
+              ))}
+            </ol>
+          </Section>
+        )}
 
         <div className="mt-8">
           <Link href="/paywall" className="btn-primary">
-            Débloquer mon plan personnalisé
-            <span aria-hidden>→</span>
+            Débloquer mon plan personnalisé →
           </Link>
         </div>
       </div>

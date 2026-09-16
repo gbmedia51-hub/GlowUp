@@ -1,4 +1,7 @@
+"use client";
+import { useEffect, useState } from "react";
 import { OnboardingShell, Choice } from "../OnboardingShell";
+import { readOnboarding, writeOnboarding } from "@/lib/onboarding-store";
 
 const options = [
   { label: "Très bas", hint: "Astuces simples, presque zéro produit" },
@@ -8,6 +11,8 @@ const options = [
 ];
 
 export default function Step5() {
+  const [value, setValue] = useState<string | undefined>();
+  useEffect(() => setValue(readOnboarding().budget), []);
   return (
     <OnboardingShell
       step={5}
@@ -17,20 +22,17 @@ export default function Step5() {
       nextLabel="Continuer vers le selfie"
       title="Votre budget produits ?"
       subtitle="On adaptera vos recommandations. Vous pouvez le changer plus tard."
+      disabled={!value}
+      onNext={() => value && writeOnboarding({ budget: value })}
     >
-      {options.map((o, i) => (
-        <button
+      {options.map((o) => (
+        <Choice
           key={o.label}
-          className="choice"
-          data-selected={i === 2 ? "true" : "false"}
-          type="button"
-        >
-          <span>
-            <span className="label block">{o.label}</span>
-            <span className="block text-xs text-ink-muted mt-0.5">{o.hint}</span>
-          </span>
-          <span className="dot" />
-        </button>
+          label={o.label}
+          hint={o.hint}
+          selected={value === o.label}
+          onClick={() => setValue(o.label)}
+        />
       ))}
     </OnboardingShell>
   );

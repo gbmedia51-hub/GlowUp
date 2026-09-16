@@ -1,95 +1,122 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
+import { supabaseServer } from "@/lib/supabase/server";
+import { TodayClient } from "./TodayClient";
 
-function Row({ label, done }: { label: string; done?: boolean }) {
-  return (
-    <div className="check-row" data-done={done ? "true" : "false"}>
-      <span className="box">{done ? "✓" : ""}</span>
-      <span className="label text-ink">{label}</span>
-    </div>
-  );
+function dayIndex(startDate: string) {
+  const start = new Date(startDate + "T00:00:00Z");
+  const diff = Math.floor((Date.now() - start.getTime()) / 86_400_000);
+  return Math.max(1, Math.min(30, diff + 1));
 }
 
-function Group({ title, meta, children }: any) {
-  return (
-    <section className="mt-6">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-xl text-ink">{title}</h2>
-        {meta && <span className="text-xs text-ink-muted">{meta}</span>}
-      </div>
-      <div className="mt-3 space-y-2">{children}</div>
-    </section>
-  );
-}
+export default async function TodayPage() {
+  const supabase = supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function TodayPage() {
-  const day = 12;
-  const total = 30;
-  const pct = Math.round((day / total) * 100);
+  const [{ data: program }, { data: sub }] = await Promise.all([
+    supabase
+      .from("programs")
+      .select("*")
+      .eq("user_id", user!.id)
+      .eq("active", true)
+      .maybeSingle(),
+    supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user!.id)
+      .maybeSingle(),
+  ]);
+
+  if (!program) {
+    return (
+      <main className="min-h-screen bg-bg px-6 pt-16 pb-10 flex flex-col items-center text-center">
+        <h1 className="font-display text-2xl text-ink">Aucun programme actif</h1>
+        <p className="mt-3 text-ink-muted">
+          Débloquez GlowUp Pro pour générer votre plan personnalisé.
+        </p>
+        <Link href="/paywall" className="btn-primary mt-6 max-w-xs">
+          Débloquer Pro
+        </Link>
+      </main>
+    );
+  }
+
+  const day = dayIndex(program.start_date);
+  const dayObj = (program.days as any[])[day - 1] ?? {};
+
+  const { data: progress } = await supabase
+    .from("daily_progress")
+    .select("*")
+    .eq("program_id", program.id)
+    .eq("day", day)
+    .maybeSingle();
+
+  const expiresIn =
+    sub && sub.expires_at
+      ? Math.max(
+          0,
+          Math.round(
+            (new Date(sub.expires_at).getTime() - Date.now()) / 86_400_000,
+          ),
+        )
+      : null;
+
   return (
     <main className="min-h-screen bg-bg pb-28">
       <div className="gradient-bg px-6 pt-10 pb-8">
         <div className="flex items-center justify-between">
           <span className="pill">Aujourd'hui</span>
-          <span className="text-xs text-ink-muted">Mardi 15 sept.</span>
+          <span className="text-xs text-ink-muted">
+            {new Date().toLocaleDateString("fr-FR", {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+            })}
+          </span>
         </div>
         <h1 className="mt-4 font-display text-[30px] leading-tight text-ink">
-          Bonjour Aïcha ✨
+          Bonjour ✨
         </h1>
-        <p className="mt-1 text-ink-muted">
-          Jour {day} de votre GlowUp de 30 jours
-        </p>
+        <p className="mt-1 text-ink-muted">Jour {day} de votre GlowUp de 30 jours</p>
 
         <div className="mt-5">
           <div className="flex justify-between text-xs text-ink-muted mb-1">
             <span>Progression du programme</span>
-            <span>
-              {day} / {total} jours
-            </span>
+            <span>{day} / 30 jours</span>
           </div>
           <div className="progress-bar">
-            <span style={{ width: `${pct}%` }} />
+            <span style={{ width: `${(day / 30) * 100}%` }} />
           </div>
         </div>
-      </div>
 
-      <div className="px-6">
-        <Group title="Matin" meta="3 gestes · ~5 min">
-          <Row label="Nettoyant doux à l'eau tiède" done />
-          <Row label="Sérum vitamine C (2 gouttes)" done />
-          <Row label="Crème hydratante + SPF 30" />
-        </Group>
-
-        <Group title="Maquillage & allure" meta="1 geste">
-          <Row label="Blush pêche + baume terracotta sur les lèvres" />
-        </Group>
-
-        <Group title="Soir" meta="2 gestes · ~4 min">
-          <Row label="Nettoyage huile puis mousse (double nettoyage)" />
-          <Row label="Crème hydratante + baume yeux" />
-        </Group>
-
-        <section className="mt-6 card p-5 relative overflow-hidden">
-          <div
-            className="absolute -right-8 -top-8 w-32 h-32 rounded-full"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(231,180,168,0.6), transparent 70%)",
-            }}
-          />
-          <span className="pill">Astuce du jour</span>
-          <p className="mt-3 text-ink leading-relaxed">
-            Après le SPF, tapotez du bout des doigts sur la zone T pendant
-            30 secondes — la texture accroche mieux et brille moins vers midi.
-          </p>
-        </section>
-
-        <div className="mt-6">
-          <Link href="/pro/progress" className="btn-primary">
-            ✓ Terminer la journée
+        {expiresIn !== null && expiresIn <= 3 && (
+          <Link
+            href="/pro/renew"
+            className="mt-4 block card p-3 text-sm text-ink flex items-center justify-between"
+          >
+            <span>
+              ⏳ Votre Pro se termine dans <b>{expiresIn} jours</b>
+            </span>
+            <span className="text-accent">Renouveler →</span>
           </Link>
-        </div>
+        )}
       </div>
+
+      <TodayClient
+        programId={program.id}
+        day={day}
+        morning={dayObj.morning ?? []}
+        makeup={dayObj.makeup ?? ""}
+        evening={dayObj.evening ?? []}
+        tip={dayObj.tip ?? ""}
+        initial={{
+          morning_done: !!progress?.morning_done,
+          makeup_done: !!progress?.makeup_done,
+          evening_done: !!progress?.evening_done,
+        }}
+      />
 
       <BottomNav active="/pro/today" />
     </main>

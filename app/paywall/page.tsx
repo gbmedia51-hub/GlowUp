@@ -1,4 +1,7 @@
+"use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 
 const features = [
   ["Programme soins personnalisé", "Adapté à votre peau et à vos objectifs"],
@@ -11,6 +14,13 @@ const features = [
 ];
 
 export default function PaywallPage() {
+  const [authed, setAuthed] = useState<boolean | null>(null);
+  useEffect(() => {
+    const supabase = supabaseBrowser();
+    supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
+  }, []);
+  const cta = authed ? "/paywall/checkout" : "/auth/signup";
+
   return (
     <main className="min-h-screen bg-bg pb-8">
       <div className="gradient-bg px-6 pt-10 pb-8">
@@ -30,9 +40,7 @@ export default function PaywallPage() {
 
         <div className="mt-6 card p-6 relative overflow-hidden">
           <span className="absolute top-4 right-4 pill">Mensuel</span>
-          <p className="text-xs uppercase tracking-widest text-ink-muted">
-            GlowUp Pro
-          </p>
+          <p className="text-xs uppercase tracking-widest text-ink-muted">GlowUp Pro</p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="font-display text-5xl text-ink">1 999</span>
             <span className="text-ink-muted">FCFA / mois</span>
@@ -59,9 +67,8 @@ export default function PaywallPage() {
         </ul>
 
         <div className="mt-8 space-y-3">
-          <Link href="/pro/today" className="btn-primary">
-            Débloquer GlowUp Pro · 1 999 FCFA
-            <span aria-hidden>→</span>
+          <Link href={cta} className="btn-primary">
+            Débloquer GlowUp Pro · 1 999 FCFA →
           </Link>
           <p className="text-center text-xs text-ink-muted">
             Paiement sécurisé via Monetbil · MTN MoMo, Orange Money, carte

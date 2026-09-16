@@ -1,7 +1,27 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
+import { supabaseServer } from "@/lib/supabase/server";
 
-export default function RenewPage() {
+export default async function RenewPage() {
+  const supabase = supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("expires_at")
+    .eq("user_id", user!.id)
+    .maybeSingle();
+
+  const daysLeft = sub
+    ? Math.max(
+        0,
+        Math.round(
+          (new Date(sub.expires_at).getTime() - Date.now()) / 86_400_000,
+        ),
+      )
+    : null;
+
   return (
     <main className="min-h-screen bg-bg pb-28">
       <div className="gradient-bg px-6 pt-10 pb-8">
@@ -19,12 +39,14 @@ export default function RenewPage() {
           />
           <span className="pill">Renouvellement</span>
           <h1 className="mt-4 font-display text-[28px] leading-tight text-ink">
-            Votre GlowUp Pro se termine bientôt
+            {daysLeft === null || daysLeft > 3
+              ? "Votre GlowUp Pro est actif"
+              : "Votre GlowUp Pro se termine bientôt"}
           </h1>
           <p className="mt-3 text-ink-muted leading-relaxed">
-            Il vous reste <b className="text-ink">2 jours</b> avant l'expiration
-            de votre plan. Renouvelez pour continuer sans interruption — un
-            nouveau programme 30 jours sera généré à partir de votre progression.
+            {daysLeft === null
+              ? "Aucun abonnement actif."
+              : `Il reste ${daysLeft} jour${daysLeft > 1 ? "s" : ""}. Renouvelez pour continuer sans interruption — un nouveau programme 30 jours sera généré à partir de votre progression.`}
           </p>
 
           <div className="mt-6 flex items-baseline gap-2">
@@ -37,34 +59,13 @@ export default function RenewPage() {
         </div>
 
         <div className="mt-6 space-y-3">
-          <Link href="/pro/today" className="btn-primary">
-            Renouveler mon plan
-            <span aria-hidden>→</span>
+          <Link href="/paywall/checkout" className="btn-primary">
+            Renouveler mon plan →
           </Link>
           <p className="text-center text-xs text-ink-muted">
             MTN MoMo · Orange Money · Carte bancaire
           </p>
         </div>
-      </div>
-
-      <div className="px-6">
-        <section className="mt-6">
-          <h2 className="font-display text-xl text-ink">Ce mois-ci, vous avez :</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {[
-              "Complété 17 jours sur 30",
-              "Maintenu une série de 5 jours",
-              "Progressé sur la régularité de votre routine",
-            ].map((t) => (
-              <li key={t} className="card p-4 flex gap-3 items-center">
-                <span className="w-7 h-7 rounded-full bg-rose/50 border border-accent/20 flex items-center justify-center text-accent">
-                  ✦
-                </span>
-                <span className="text-ink">{t}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
       </div>
 
       <BottomNav active="/pro/today" />
