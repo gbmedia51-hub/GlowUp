@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { readOnboarding } from "@/lib/onboarding-store";
 import { ensureSession } from "@/lib/supabase/browser";
 
+// Two hidden file inputs: one that forces the front camera (`capture="user"`),
+// one that opens the OS gallery picker. Users choose their route via the two
+// buttons below the preview.
+
 // Downscale a photo aggressively enough to fit in low-RAM phones and
 // small mobile upload budgets. Tries a chain of (max, quality) settings
 // and returns the first one that produces a data URL under ~900 KB.
@@ -55,7 +59,8 @@ async function downscale(file: File): Promise<string> {
 
 export default function SelfiePage() {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "process" | "analyze">(null);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +149,7 @@ export default function SelfiePage() {
         <div className="mt-8 card p-6">
           <button
             type="button"
-            onClick={() => inputRef.current?.click()}
+            onClick={() => (preview ? cameraRef.current?.click() : cameraRef.current?.click())}
             className="w-full aspect-[4/5] rounded-xl2 border-2 border-dashed border-line flex flex-col items-center justify-center text-center px-6 overflow-hidden relative"
             style={{
               background: preview
@@ -157,15 +162,35 @@ export default function SelfiePage() {
                 <div className="w-24 h-24 rounded-full bg-rose/40 border border-accent/20 flex items-center justify-center text-4xl">
                   📸
                 </div>
-                <p className="mt-5 font-display text-xl text-ink">Prendre un selfie</p>
+                <p className="mt-5 font-display text-xl text-ink">
+                  Ajoutez votre photo
+                </p>
                 <p className="mt-2 text-sm text-ink-muted max-w-[240px]">
-                  ou touchez pour importer une photo
+                  Prenez un selfie ou importez depuis votre galerie
                 </p>
               </>
             )}
           </button>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => cameraRef.current?.click()}
+              className="btn-ghost text-sm"
+            >
+              📸 Prendre
+            </button>
+            <button
+              type="button"
+              onClick={() => galleryRef.current?.click()}
+              className="btn-ghost text-sm"
+            >
+              🖼️ Galerie
+            </button>
+          </div>
+
           <input
-            ref={inputRef}
+            ref={cameraRef}
             type="file"
             accept="image/*"
             capture="user"
@@ -173,6 +198,18 @@ export default function SelfiePage() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) onPick(f);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={galleryRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPick(f);
+              e.target.value = "";
             }}
           />
 
@@ -207,16 +244,25 @@ export default function SelfiePage() {
           {busy === "analyze" ? "Analyse en cours…" : "Analyser ma photo →"}
         </button>
         {preview && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="btn-ghost"
-          >
-            Reprendre une photo
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => cameraRef.current?.click()}
+              className="btn-ghost text-sm"
+            >
+              Reprendre
+            </button>
+            <button
+              type="button"
+              onClick={() => galleryRef.current?.click()}
+              className="btn-ghost text-sm"
+            >
+              Autre photo
+            </button>
+          </div>
         )}
         <p className="text-center text-xs text-ink-muted">
-          🔒 Photo supprimée immédiatement après l'analyse
+          🔒 Photo utilisée uniquement pour l'analyse, jamais enregistrée
         </p>
       </div>
     </main>
