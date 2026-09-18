@@ -17,24 +17,20 @@ import { chatJson } from "@/lib/ai/openai";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function verifySignature(rawBody: string, headers: Headers): boolean {
+function verifySignature(_rawBody: string, headers: Headers): boolean {
   const secret = (process.env.FAPSHI_WEBHOOK_SECRET || "").replace(/\s+/g, "");
   if (!secret) return true; // no secret configured → skip check
-  // Fapshi has used a few header names historically; accept the common ones.
-  const sig =
-    headers.get("x-fapshi-signature") ||
-    headers.get("fapshi-signature") ||
-    headers.get("x-signature") ||
-    headers.get("signature") ||
+  // Fapshi sends the shared secret verbatim in a header. Dashboard tells us
+  // it's `x-wh-secret`; accept a couple of common variants defensively.
+  const sent =
+    headers.get("x-wh-secret") ||
+    headers.get("x-webhook-secret") ||
+    headers.get("webhook-secret") ||
     "";
-  if (!sig) return false;
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(rawBody)
-    .digest("hex");
-  // Constant-time compare
-  const a = Buffer.from(sig.trim().toLowerCase(), "utf8");
-  const b = Buffer.from(expected, "utf8");
+  const provided = sent.trim();
+  if (!provided) return false;
+  const a = Buffer.from(provided, "utf8");
+  const b = Buffer.from(secret, "utf8");
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
 }
