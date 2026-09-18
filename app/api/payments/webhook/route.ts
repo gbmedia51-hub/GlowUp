@@ -1,26 +1,59 @@
 import { NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { checkPaymentStatus } from "@/lib/fapshi";
 import { PROGRAM_SYSTEM } from "@/lib/ai/prompts";
 import { chatJson } from "@/lib/ai/openai";
 
-// Fapshi webhook: POST with the transaction body. We do NOT trust the
-// payload — instead we take the transId, re-query Fapshi's payment-status
-// endpoint server-to-server (that call is authenticated with our API
-// credentials), and act only on that verified status.
+// Fapshi webhook: POST with the transaction body.
+//
+// Security layers (defense in depth):
+//   1. If FAPSHI_WEBHOOK_SECRET is set, verify the HMAC signature Fapshi
+//      sends in the request headers — rejects spoofed webhooks up front.
+//   2. Independent of signature, re-query /payment-status/{transId}
+//      server-to-server with our API credentials. That is ground truth
+//      and is not spoofable.
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+function verifySignature(rawBody: string, headers: Headers): boolean {
+  const secret = (process.env.FAPSHI_WEBHOOK_SECRET || "").replace(/\s+/g, "");
+  if (!secret) return true; // no secret configured → skip check
+  // Fapshi has used a few header names historically; accept the common ones.
+  const sig =
+    headers.get("x-fapshi-signature") ||
+    headers.get("fapshi-signature") ||
+    headers.get("x-signature") ||
+    headers.get("signature") ||
+    "";
+  if (!sig) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+  // Constant-time compare
+  const a = Buffer.from(sig.trim().toLowerCase(), "utf8");
+  const b = Buffer.from(expected, "utf8");
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 export async function POST(req: Request) {
+  const rawBody = await req.text();
+
+  if (!verifySignature(rawBody, req.headers)) {
+    console.warn("[payments.webhook] bad signature");
+    return NextResponse.json({ ok: false, error: "bad_signature" }, { status: 401 });
+  }
+
   let payload: any = {};
   try {
     const ct = req.headers.get("content-type") || "";
     if (ct.includes("application/json")) {
-      payload = await req.json();
+      payload = rawBody ? JSON.parse(rawBody) : {};
     } else {
-      const form = await req.formData();
-      payload = Object.fromEntries(form.entries());
+      payload = Object.fromEntries(new URLSearchParams(rawBody).entries());
     }
   } catch (e: any) {
     console.error("[payments.webhook] parse", e?.message);
