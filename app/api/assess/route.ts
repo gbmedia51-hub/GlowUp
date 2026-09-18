@@ -70,6 +70,7 @@ export async function POST(req: Request) {
       score: Math.max(0, Math.min(100, Math.round(result.score ?? 0))),
       score_breakdown: result.score_breakdown ?? {},
       opportunities: result.opportunities ?? [],
+      quick_wins: result.quick_wins ?? [],
     });
 
     return NextResponse.json(result);

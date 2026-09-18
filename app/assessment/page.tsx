@@ -160,15 +160,33 @@ export default async function AssessmentPage() {
                 ["Blush", makeup.blush],
                 ["Yeux", makeup.eyes],
                 ["Teint", makeup.base],
+                ["À éviter", makeup.avoid],
               ].map(([k, v]: any) =>
                 v ? (
-                  <div key={k} className="flex justify-between gap-4">
-                    <span className="text-ink-muted">{k}</span>
-                    <span className="text-right">{v}</span>
+                  <div key={k} className="flex flex-col gap-1">
+                    <span className="text-xs uppercase tracking-widest text-ink-muted">
+                      {k}
+                    </span>
+                    <span className="leading-relaxed">{v}</span>
                   </div>
                 ) : null,
               )}
             </div>
+          </Section>
+        )}
+
+        {Array.isArray(a.quick_wins) && a.quick_wins.length > 0 && (
+          <Section title="3 quick wins à essayer aujourd'hui">
+            <ul className="space-y-3">
+              {(a.quick_wins as string[]).map((t, i) => (
+                <li key={i} className="card p-4 flex gap-3 items-start">
+                  <span className="w-7 h-7 rounded-full bg-peach text-accent-dark flex items-center justify-center text-sm font-semibold">
+                    ✦
+                  </span>
+                  <span className="text-ink leading-relaxed text-sm">{t}</span>
+                </li>
+              ))}
+            </ul>
           </Section>
         )}
 

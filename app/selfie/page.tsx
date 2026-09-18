@@ -5,25 +5,52 @@ import { useRouter } from "next/navigation";
 import { readOnboarding } from "@/lib/onboarding-store";
 import { ensureSession } from "@/lib/supabase/browser";
 
-async function downscale(file: File, max = 640, quality = 0.75): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  let out = canvas.toDataURL("image/jpeg", quality);
-  // Progressive shrink if still huge — some phone cams produce unexpectedly
-  // fat base64 even after canvas encode.
-  let q = quality;
-  while (out.length > 900_000 && q > 0.4) {
-    q -= 0.1;
-    out = canvas.toDataURL("image/jpeg", q);
+// Downscale a photo aggressively enough to fit in low-RAM phones and
+// small mobile upload budgets. Tries a chain of (max, quality) settings
+// and returns the first one that produces a data URL under ~900 KB.
+// Releases the ImageBitmap explicitly so Chromium can reclaim memory.
+async function downscale(file: File): Promise<string> {
+  const attempts: Array<[number, number]> = [
+    [640, 0.75],
+    [512, 0.7],
+    [420, 0.65],
+    [360, 0.6],
+  ];
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(file);
+    for (const [max, quality] of attempts) {
+      const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+      const w = Math.round(bitmap.width * scale);
+      const h = Math.round(bitmap.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) continue;
+      try {
+        ctx.drawImage(bitmap, 0, 0, w, h);
+        const out = canvas.toDataURL("image/jpeg", quality);
+        // free canvas backing store
+        canvas.width = 0;
+        canvas.height = 0;
+        if (out && out.length < 900_000) return out;
+        if (out && attempts.indexOf([max, quality]) === attempts.length - 1) {
+          return out; // last attempt, take whatever we got
+        }
+      } catch {
+        // canvas OOM on very low-RAM phones — try next smaller size
+        continue;
+      }
+    }
+    throw new Error("image_too_large_after_shrink");
+  } finally {
+    try {
+      bitmap?.close?.();
+    } catch {
+      /* ignore */
+    }
   }
-  return out;
 }
 
 export default function SelfiePage() {
@@ -39,8 +66,13 @@ export default function SelfiePage() {
     try {
       const dataUrl = await downscale(file);
       setPreview(dataUrl);
-    } catch {
-      setError("Impossible de lire cette image. Réessayez.");
+    } catch (e: any) {
+      const msg = e?.message ?? "";
+      setError(
+        msg === "image_too_large_after_shrink"
+          ? "Cette photo est trop lourde pour votre appareil. Essayez une photo plus petite ou fermez d'autres apps."
+          : "Impossible de lire cette image. Prenez ou choisissez une autre photo.",
+      );
     } finally {
       setBusy(null);
     }
@@ -72,7 +104,7 @@ export default function SelfiePage() {
         const suffix = data?.detail ? ` — ${data.detail}` : "";
         setError(
           data.error === "no_face"
-            ? "Aucun visage détecté. Reprenez une photo bien cadrée."
+            ? "On ne voit pas encore bien votre visage. Reprenez une photo centrée, dans un endroit plus lumineux, sans casque ni lunettes de soleil."
             : `L'analyse a échoué. Réessayez dans un instant.${suffix}`,
         );
         setBusy(null);

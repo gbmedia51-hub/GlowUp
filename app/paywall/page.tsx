@@ -34,14 +34,15 @@ export default async function PaywallPage() {
         </div>
 
         <div className="mt-6 card p-6 relative overflow-hidden">
-          <span className="absolute top-4 right-4 pill">Mensuel</span>
+          <span className="absolute top-4 right-4 pill">30 jours</span>
           <p className="text-xs uppercase tracking-widest text-ink-muted">GlowUp Pro</p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="font-display text-5xl text-ink">1 999</span>
-            <span className="text-ink-muted">FCFA / mois</span>
+            <span className="text-ink-muted">FCFA</span>
           </div>
           <p className="mt-2 text-xs text-ink-muted">
-            Sans reconduction automatique. Vous renouvelez manuellement chaque mois.
+            Routine complète de 30 jours. Pas de prélèvement automatique — vous
+            payez à nouveau seulement si vous souhaitez continuer.
           </p>
         </div>
       </div>
