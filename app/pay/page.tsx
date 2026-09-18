@@ -75,8 +75,14 @@ export default function PayPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError("Impossible d'initier le paiement. Réessayez.");
+        const suffix = data?.detail ? ` — ${data.detail}` : "";
+        setError(`Impossible d'initier le paiement.${suffix}`);
         setBusy(false);
+        return;
+      }
+      // Some providers return a hosted-checkout URL — redirect instead of polling.
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
         return;
       }
       setPending(data.payment_id);
