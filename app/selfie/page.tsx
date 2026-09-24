@@ -149,7 +149,8 @@ export default function SelfiePage() {
         <div className="mt-8 card p-6">
           <button
             type="button"
-            onClick={() => (preview ? cameraRef.current?.click() : cameraRef.current?.click())}
+            disabled={busy === "analyze"}
+            onClick={() => cameraRef.current?.click()}
             className="w-full aspect-[4/5] rounded-xl2 border-2 border-dashed border-line flex flex-col items-center justify-center text-center px-6 overflow-hidden relative"
             style={{
               background: preview
@@ -169,6 +170,84 @@ export default function SelfiePage() {
                   Prenez un selfie ou importez depuis votre galerie
                 </p>
               </>
+            )}
+
+            {/* Scan overlay while OpenAI Vision is analyzing */}
+            {busy === "analyze" && preview && (
+              <div
+                className="scan-overlay absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(circle at center, rgba(20,10,10,0.28) 0%, rgba(20,10,10,0.55) 100%)",
+                  backdropFilter: "blur(1.5px)",
+                  WebkitBackdropFilter: "blur(1.5px)",
+                }}
+              >
+                {/* Corner brackets */}
+                <span
+                  className="absolute top-4 left-4 w-9 h-9"
+                  style={{
+                    borderTop: "2px solid rgba(255,255,255,0.9)",
+                    borderLeft: "2px solid rgba(255,255,255,0.9)",
+                    borderTopLeftRadius: "0.5rem",
+                  }}
+                />
+                <span
+                  className="absolute top-4 right-4 w-9 h-9"
+                  style={{
+                    borderTop: "2px solid rgba(255,255,255,0.9)",
+                    borderRight: "2px solid rgba(255,255,255,0.9)",
+                    borderTopRightRadius: "0.5rem",
+                  }}
+                />
+                <span
+                  className="absolute bottom-4 left-4 w-9 h-9"
+                  style={{
+                    borderBottom: "2px solid rgba(255,255,255,0.9)",
+                    borderLeft: "2px solid rgba(255,255,255,0.9)",
+                    borderBottomLeftRadius: "0.5rem",
+                  }}
+                />
+                <span
+                  className="absolute bottom-4 right-4 w-9 h-9"
+                  style={{
+                    borderBottom: "2px solid rgba(255,255,255,0.9)",
+                    borderRight: "2px solid rgba(255,255,255,0.9)",
+                    borderBottomRightRadius: "0.5rem",
+                  }}
+                />
+
+                {/* Scanning line */}
+                <span
+                  className="scan-line absolute left-2 right-2 h-[3px] rounded-full"
+                  style={{
+                    top: 0,
+                    background:
+                      "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 15%, rgba(255,240,232,1) 50%, rgba(255,255,255,0.15) 85%, transparent 100%)",
+                    boxShadow:
+                      "0 0 18px rgba(255,220,200,0.85), 0 0 44px rgba(231,180,168,0.55)",
+                  }}
+                />
+
+                {/* Center status */}
+                <div className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-2 text-white">
+                  <span
+                    className="scan-dot w-2.5 h-2.5 rounded-full"
+                    style={{
+                      background: "#fff",
+                      boxShadow: "0 0 12px rgba(255,220,200,0.9)",
+                    }}
+                  />
+                  <p
+                    className="font-display text-[15px] tracking-wide"
+                    style={{
+                      textShadow: "0 1px 8px rgba(0,0,0,0.55)",
+                    }}
+                  >
+                    Analyse en cours…
+                  </p>
+                </div>
+              </div>
             )}
           </button>
 
