@@ -217,7 +217,10 @@ export default function SelfiePage() {
                   }}
                 />
 
-                {/* Scanning line */}
+                {/* Slow horizontal shimmer across the whole frame */}
+                <span className="scan-shimmer absolute inset-0" />
+
+                {/* Scanning line — sweeps top→bottom→top continuously */}
                 <span
                   className="scan-line absolute left-2 right-2 h-[3px] rounded-full"
                   style={{
@@ -239,12 +242,12 @@ export default function SelfiePage() {
                     }}
                   />
                   <p
-                    className="font-display text-[15px] tracking-wide"
+                    className="scan-label font-display text-[15px] tracking-wide"
                     style={{
                       textShadow: "0 1px 8px rgba(0,0,0,0.55)",
                     }}
                   >
-                    Analyse en cours…
+                    Analyse en cours
                   </p>
                 </div>
               </div>
