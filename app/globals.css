@@ -213,24 +213,33 @@ body {
 /* Selfie scan overlay — a big glowing magnifier "lens" that wanders
    naturally across the face area (Lissajous-like motion) while
    analysis is in flight. Not on rails, not circular. */
+/* Wander the full face area — left ear → right ear on X, forehead
+   → chin on Y. left/top are % of the parent frame; lens is 42% wide
+   so left ranges 0-58%, top ranges 0-66% to cover the interior. */
 @keyframes scan-x {
-  0%   { transform: translateX(18%); }
-  20%  { transform: translateX(62%); }
-  40%  { transform: translateX(32%); }
-  60%  { transform: translateX(58%); }
-  80%  { transform: translateX(22%); }
-  100% { transform: translateX(18%); }
+  0%   { left: 4%;  }  /* left cheek */
+  12%  { left: 52%; }  /* right cheek */
+  24%  { left: 14%; }
+  36%  { left: 56%; }  /* right edge */
+  48%  { left: 28%; }  /* center */
+  60%  { left: 2%;  }  /* left edge */
+  72%  { left: 46%; }
+  84%  { left: 12%; }
+  100% { left: 4%;  }
 }
 @keyframes scan-y {
-  0%   { transform: translateY(22%); }
-  25%  { transform: translateY(48%); }
-  50%  { transform: translateY(30%); }
-  75%  { transform: translateY(58%); }
-  100% { transform: translateY(22%); }
+  0%   { top: 4%;  }   /* forehead */
+  14%  { top: 48%; }   /* chin area */
+  28%  { top: 18%; }   /* eyes */
+  42%  { top: 60%; }   /* bottom */
+  56%  { top: 10%; }   /* hairline */
+  70%  { top: 38%; }   /* nose/lips */
+  84%  { top: 22%; }
+  100% { top: 4%;  }
 }
 @keyframes scan-tilt {
-  0%, 100% { transform: rotate(-6deg); }
-  50%      { transform: rotate(6deg); }
+  0%, 100% { transform: rotate(-8deg); }
+  50%      { transform: rotate(8deg); }
 }
 @keyframes scan-glow {
   0%, 100% { opacity: 0.5; transform: scale(1); }
@@ -251,26 +260,27 @@ body {
 }
 /* Outer wrapper handles X translation; inner handles Y. Different
    periods make the path non-repeating and feel natural. */
+/* Single wandering wrapper — both X and Y animations run on it
+   with different periods so the path never quite repeats. */
 .scan-lens-x {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 40%;
+  width: 42%;
   aspect-ratio: 1;
   pointer-events: none;
-  animation: scan-x 5.4s ease-in-out infinite;
-  will-change: transform;
+  animation:
+    scan-x 8.4s ease-in-out infinite,
+    scan-y 10.7s ease-in-out infinite;
+  will-change: left, top;
 }
 .scan-lens-y {
   width: 100%;
   height: 100%;
-  animation: scan-y 6.9s ease-in-out infinite;
-  will-change: transform;
+  /* kept for JSX compatibility, no motion here now */
 }
 .scan-lens-tilt {
   width: 100%;
   height: 100%;
-  animation: scan-tilt 3.2s ease-in-out infinite;
+  animation: scan-tilt 3.4s ease-in-out infinite;
   will-change: transform;
   display: flex;
   align-items: center;
