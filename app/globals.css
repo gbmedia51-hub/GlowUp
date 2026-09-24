@@ -210,22 +210,31 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* Selfie scan overlay — a soft "lens" that orbits the image perimeter
-   continuously while analysis is in flight. */
-@keyframes scan-orbit {
-  to {
-    offset-distance: 100%;
-  }
+/* Selfie scan overlay — a big glowing magnifier "lens" that wanders
+   naturally across the face area (Lissajous-like motion) while
+   analysis is in flight. Not on rails, not circular. */
+@keyframes scan-x {
+  0%   { transform: translateX(18%); }
+  20%  { transform: translateX(62%); }
+  40%  { transform: translateX(32%); }
+  60%  { transform: translateX(58%); }
+  80%  { transform: translateX(22%); }
+  100% { transform: translateX(18%); }
+}
+@keyframes scan-y {
+  0%   { transform: translateY(22%); }
+  25%  { transform: translateY(48%); }
+  50%  { transform: translateY(30%); }
+  75%  { transform: translateY(58%); }
+  100% { transform: translateY(22%); }
+}
+@keyframes scan-tilt {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(6deg); }
 }
 @keyframes scan-glow {
-  0%, 100% {
-    opacity: 0.5;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.15); }
 }
 @keyframes scan-dots {
   0%, 20%   { content: ""; }
@@ -235,64 +244,67 @@ body {
 }
 @keyframes scan-fadein {
   from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes scan-spin {
-  to { transform: rotate(360deg); }
+  to   { opacity: 1; }
 }
 .scan-overlay {
   animation: scan-fadein 220ms ease-out both;
 }
-.scan-lens {
+/* Outer wrapper handles X translation; inner handles Y. Different
+   periods make the path non-repeating and feel natural. */
+.scan-lens-x {
   position: absolute;
   top: 0;
   left: 0;
-  width: 56px;
-  height: 56px;
-  margin: -28px 0 0 -28px;
-  border-radius: 999px;
-  offset-path: inset(0 round 1.25rem);
-  offset-distance: 0%;
-  offset-rotate: 0deg;
-  animation: scan-orbit 3.6s linear infinite;
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(255, 240, 232, 0.95) 0%,
-      rgba(255, 220, 200, 0.55) 35%,
-      rgba(255, 200, 170, 0.15) 65%,
-      transparent 78%
-    );
-  box-shadow:
-    0 0 24px rgba(255, 220, 200, 0.9),
-    0 0 60px rgba(231, 180, 168, 0.6);
+  width: 40%;
+  aspect-ratio: 1;
   pointer-events: none;
-  will-change: offset-distance;
-}
-/* Fallback trail: a subtle glowing ring that just rotates in place, so
-   even browsers without offset-path support get a spinner. */
-.scan-fallback {
-  position: absolute;
-  inset: 8px;
-  border-radius: 1.15rem;
-  pointer-events: none;
-  background:
-    conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      transparent 260deg,
-      rgba(255, 240, 232, 0.45) 320deg,
-      rgba(255, 240, 232, 0.85) 350deg,
-      transparent 360deg
-    );
-  -webkit-mask: radial-gradient(circle, transparent 60%, black 62%);
-          mask: radial-gradient(circle, transparent 60%, black 62%);
-  animation: scan-spin 3.6s linear infinite;
+  animation: scan-x 5.4s ease-in-out infinite;
   will-change: transform;
-  opacity: 0.7;
 }
-@supports (offset-path: inset(0)) {
-  .scan-fallback { display: none; }
+.scan-lens-y {
+  width: 100%;
+  height: 100%;
+  animation: scan-y 6.9s ease-in-out infinite;
+  will-change: transform;
+}
+.scan-lens-tilt {
+  width: 100%;
+  height: 100%;
+  animation: scan-tilt 3.2s ease-in-out infinite;
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scan-lens-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 42% 42%,
+    rgba(255, 245, 235, 0.5) 0%,
+    rgba(255, 225, 205, 0.32) 35%,
+    rgba(255, 200, 170, 0.14) 60%,
+    transparent 74%
+  );
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 240, 232, 0.85),
+    inset 0 0 24px rgba(180, 92, 77, 0.35),
+    0 0 32px rgba(255, 220, 200, 0.9),
+    0 0 72px rgba(231, 180, 168, 0.55);
+  position: relative;
+}
+.scan-lens-handle {
+  position: absolute;
+  right: 6%;
+  bottom: 6%;
+  width: 34%;
+  height: 12%;
+  border-radius: 999px;
+  transform: rotate(45deg);
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(180, 92, 77, 0.95), rgba(120, 60, 50, 0.9));
+  box-shadow: 0 0 10px rgba(180, 92, 77, 0.6);
 }
 .scan-dot {
   animation: scan-glow 1.2s ease-in-out infinite;

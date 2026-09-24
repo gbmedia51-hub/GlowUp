@@ -217,32 +217,18 @@ export default function SelfiePage() {
                   }}
                 />
 
-                {/* Fallback conic sweep for browsers without offset-path */}
-                <span className="scan-fallback" />
-
-                {/* Lens: soft glow + a magnifier icon that continuously
-                    orbits the image perimeter */}
-                <span className="scan-lens">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="rgba(120,60,50,0.85)"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      width: 22,
-                      height: 22,
-                      transform: "translate(-50%,-50%)",
-                    }}
-                  >
-                    <circle cx="10.5" cy="10.5" r="6" />
-                    <path d="m20 20-4.35-4.35" />
-                  </svg>
-                </span>
+                {/* Big magnifier that wanders naturally across the face:
+                    outer X wrapper + inner Y wrapper on different periods
+                    creates a non-repeating, natural-feeling motion. */}
+                <div className="scan-lens-x">
+                  <div className="scan-lens-y">
+                    <div className="scan-lens-tilt">
+                      <div className="scan-lens-body">
+                        <span className="scan-lens-handle" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Center status */}
                 <div className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-2 text-white">
