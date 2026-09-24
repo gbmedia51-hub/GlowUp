@@ -217,20 +217,32 @@ export default function SelfiePage() {
                   }}
                 />
 
-                {/* Slow horizontal shimmer across the whole frame */}
-                <span className="scan-shimmer absolute inset-0" />
+                {/* Fallback conic sweep for browsers without offset-path */}
+                <span className="scan-fallback" />
 
-                {/* Scanning line — sweeps top→bottom→top continuously */}
-                <span
-                  className="scan-line absolute left-2 right-2 h-[3px] rounded-full"
-                  style={{
-                    top: 0,
-                    background:
-                      "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 15%, rgba(255,240,232,1) 50%, rgba(255,255,255,0.15) 85%, transparent 100%)",
-                    boxShadow:
-                      "0 0 18px rgba(255,220,200,0.85), 0 0 44px rgba(231,180,168,0.55)",
-                  }}
-                />
+                {/* Lens: soft glow + a magnifier icon that continuously
+                    orbits the image perimeter */}
+                <span className="scan-lens">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="rgba(120,60,50,0.85)"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      width: 22,
+                      height: 22,
+                      transform: "translate(-50%,-50%)",
+                    }}
+                  >
+                    <circle cx="10.5" cy="10.5" r="6" />
+                    <path d="m20 20-4.35-4.35" />
+                  </svg>
+                </span>
 
                 {/* Center status */}
                 <div className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-2 text-white">

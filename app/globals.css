@@ -210,38 +210,21 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* Selfie scan overlay — continuous animation while analysis is in flight */
-@keyframes scan-vert {
-  0% {
-    transform: translateY(-8%);
-    opacity: 0.55;
-  }
-  50% {
-    transform: translateY(108%);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-8%);
-    opacity: 0.55;
+/* Selfie scan overlay — a soft "lens" that orbits the image perimeter
+   continuously while analysis is in flight. */
+@keyframes scan-orbit {
+  to {
+    offset-distance: 100%;
   }
 }
 @keyframes scan-glow {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 0.5;
     transform: scale(1);
   }
   50% {
     opacity: 1;
     transform: scale(1.15);
-  }
-}
-@keyframes scan-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
   }
 }
 @keyframes scan-dots {
@@ -254,12 +237,62 @@ body {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes scan-spin {
+  to { transform: rotate(360deg); }
+}
 .scan-overlay {
   animation: scan-fadein 220ms ease-out both;
 }
-.scan-line {
-  animation: scan-vert 3.4s ease-in-out infinite;
-  will-change: transform, opacity;
+.scan-lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 999px;
+  offset-path: inset(0 round 1.25rem);
+  offset-distance: 0%;
+  offset-rotate: 0deg;
+  animation: scan-orbit 3.6s linear infinite;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(255, 240, 232, 0.95) 0%,
+      rgba(255, 220, 200, 0.55) 35%,
+      rgba(255, 200, 170, 0.15) 65%,
+      transparent 78%
+    );
+  box-shadow:
+    0 0 24px rgba(255, 220, 200, 0.9),
+    0 0 60px rgba(231, 180, 168, 0.6);
+  pointer-events: none;
+  will-change: offset-distance;
+}
+/* Fallback trail: a subtle glowing ring that just rotates in place, so
+   even browsers without offset-path support get a spinner. */
+.scan-fallback {
+  position: absolute;
+  inset: 8px;
+  border-radius: 1.15rem;
+  pointer-events: none;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 260deg,
+      rgba(255, 240, 232, 0.45) 320deg,
+      rgba(255, 240, 232, 0.85) 350deg,
+      transparent 360deg
+    );
+  -webkit-mask: radial-gradient(circle, transparent 60%, black 62%);
+          mask: radial-gradient(circle, transparent 60%, black 62%);
+  animation: scan-spin 3.6s linear infinite;
+  will-change: transform;
+  opacity: 0.7;
+}
+@supports (offset-path: inset(0)) {
+  .scan-fallback { display: none; }
 }
 .scan-dot {
   animation: scan-glow 1.2s ease-in-out infinite;
@@ -271,17 +304,4 @@ body {
   width: 1.4em;
   text-align: left;
   animation: scan-dots 1.4s steps(4, end) infinite;
-}
-.scan-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 220, 200, 0.15) 40%,
-    rgba(255, 220, 200, 0.45) 50%,
-    rgba(255, 220, 200, 0.15) 60%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: scan-shimmer 2.2s linear infinite;
-  will-change: background-position;
 }
