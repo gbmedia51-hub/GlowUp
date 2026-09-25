@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 // User lands here after SasPay's hosted checkout. We poll our own
 // /api/payments/status until either (a) subscription is active
 // (webhook fired → redirect to /pro/today) or (b) enough time passed
 // without confirmation (show "still processing" state).
 
-export default function PaywallReturnPage() {
+function ReturnInner() {
   const router = useRouter();
   const params = useSearchParams();
   const paymentId = params.get("payment_id") ?? "";
@@ -104,5 +104,26 @@ export default function PaywallReturnPage() {
         Retour à mon analyse
       </Link>
     </main>
+  );
+}
+
+function ReturnFallback() {
+  return (
+    <main className="min-h-screen bg-bg px-6 pt-16 pb-10 flex flex-col items-center text-center">
+      <div className="w-16 h-16 rounded-full bg-rose/40 border border-accent/20 flex items-center justify-center text-3xl">
+        ⏳
+      </div>
+      <h1 className="mt-6 font-display text-[26px] text-ink">
+        Confirmation du paiement…
+      </h1>
+    </main>
+  );
+}
+
+export default function PaywallReturnPage() {
+  return (
+    <Suspense fallback={<ReturnFallback />}>
+      <ReturnInner />
+    </Suspense>
   );
 }
