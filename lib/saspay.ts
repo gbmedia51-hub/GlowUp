@@ -51,16 +51,19 @@ export async function createCheckoutSession(input: {
 }): Promise<CheckoutSession> {
   const currency = (input.currency || process.env.PAYMENT_CURRENCY || "XAF")
     .replace(/\s+/g, "");
+  // We DON'T pin customer_email/customer_name or a country field: SasPay
+  // uses those to bias the checkout's country selector, which restricts
+  // available payment methods. Leaving them empty lets every SasPay-supported
+  // country/method show up so any buyer can pay.
   const body: Record<string, unknown> = {
     amount: input.amount.toFixed(2), // "1999.00"
     currency,
-    customer_email:
-      input.customerEmail || `${input.userId.slice(0, 8)}@glowup.africa`,
-    customer_name: input.customerName || "Client GlowUp",
     description: input.description || "GlowUp Pro — routine 30 jours",
     return_url: input.returnUrl,
     metadata: { payment_id: input.paymentId, user_id: input.userId },
   };
+  if (input.customerEmail) body.customer_email = input.customerEmail;
+  if (input.customerName) body.customer_name = input.customerName;
 
   const r = await fetch(`${baseUrl()}/checkout-sessions/`, {
     method: "POST",
