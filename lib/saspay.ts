@@ -68,17 +68,20 @@ export async function createCheckoutSession(input: {
     body: JSON.stringify(body),
   });
   const json: any = await r.json().catch(() => ({}));
-  if (!r.ok || !json?.checkout_url) {
+  // SasPay wraps successful responses as { success: true, data: {...} }.
+  // Fall back to top-level fields for safety.
+  const payload = (json && typeof json === "object" && json.data) || json;
+  if (!r.ok || !payload?.checkout_url) {
     throw new Error(
       `saspay ${r.status}: ${json?.message ?? json?.error ?? JSON.stringify(json).slice(0, 300)}`,
     );
   }
   return {
-    id: String(json.id ?? ""),
-    slug: json.slug ?? undefined,
-    checkout_url: String(json.checkout_url),
-    amount: String(json.amount ?? body.amount),
-    currency: String(json.currency ?? currency),
+    id: String(payload.id ?? ""),
+    slug: payload.slug ?? undefined,
+    checkout_url: String(payload.checkout_url),
+    amount: String(payload.amount ?? body.amount),
+    currency: String(payload.currency ?? currency),
     raw: json,
   };
 }
