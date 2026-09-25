@@ -51,19 +51,19 @@ export async function createCheckoutSession(input: {
 }): Promise<CheckoutSession> {
   const currency = (input.currency || process.env.PAYMENT_CURRENCY || "XAF")
     .replace(/\s+/g, "");
-  // We DON'T pin customer_email/customer_name or a country field: SasPay
-  // uses those to bias the checkout's country selector, which restricts
-  // available payment methods. Leaving them empty lets every SasPay-supported
-  // country/method show up so any buyer can pay.
+  // SasPay requires customer_email + customer_name. We pass generic
+  // values that don't imply a country so the hosted checkout's country
+  // selector stays open to every SasPay-supported country/method.
   const body: Record<string, unknown> = {
     amount: input.amount.toFixed(2), // "1999.00"
     currency,
+    customer_email:
+      input.customerEmail || `${input.userId.slice(0, 8)}@glowup.africa`,
+    customer_name: input.customerName || "Client GlowUp",
     description: input.description || "GlowUp Pro — routine 30 jours",
     return_url: input.returnUrl,
     metadata: { payment_id: input.paymentId, user_id: input.userId },
   };
-  if (input.customerEmail) body.customer_email = input.customerEmail;
-  if (input.customerName) body.customer_name = input.customerName;
 
   const r = await fetch(`${baseUrl()}/checkout-sessions/`, {
     method: "POST",
@@ -75,9 +75,13 @@ export async function createCheckoutSession(input: {
   // Fall back to top-level fields for safety.
   const payload = (json && typeof json === "object" && json.data) || json;
   if (!r.ok || !payload?.checkout_url) {
-    throw new Error(
-      `saspay ${r.status}: ${json?.message ?? json?.error ?? JSON.stringify(json).slice(0, 300)}`,
-    );
+    const details = (() => {
+      if (typeof json?.message === "string") return json.message;
+      if (typeof json?.error === "string") return json.error;
+      if (json?.errors) return JSON.stringify(json.errors).slice(0, 300);
+      return JSON.stringify(json).slice(0, 300);
+    })();
+    throw new Error(`saspay ${r.status}: ${details}`);
   }
   return {
     id: String(payload.id ?? ""),
