@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirectIfActiveSub } from "@/lib/supabase/server";
+import { UnlockButton } from "./UnlockButton";
 
 const features = [
   ["Programme soins personnalisé", "Adapté à votre peau et à vos objectifs"],
@@ -63,17 +64,10 @@ export default async function PaywallPage() {
         </ul>
 
         <div className="mt-8 space-y-3">
-          <button
-            type="button"
-            disabled
-            className="btn-primary"
-            style={{ opacity: 0.55, cursor: "not-allowed" }}
-          >
-            Paiement bientôt disponible
-          </button>
+          <UnlockButton label="Débloquer GlowUp Pro · 1 999 FCFA →" />
           <p className="text-center text-xs text-ink-muted">
-            Nous finalisons l'intégration avec un nouveau fournisseur de
-            paiement. Revenez dans quelques jours.
+            Paiement sécurisé — vous serez redirigé·e vers SasPay pour
+            confirmer.
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BottomNav } from "../BottomNav";
 import { requireActiveSubscription } from "@/lib/supabase/server";
+import { UnlockButton } from "@/app/paywall/UnlockButton";
 
 export default async function RenewPage() {
   const { subscription: sub } = await requireActiveSubscription();
@@ -51,16 +52,9 @@ export default async function RenewPage() {
         </div>
 
         <div className="mt-6 space-y-3">
-          <button
-            type="button"
-            disabled
-            className="btn-primary"
-            style={{ opacity: 0.55, cursor: "not-allowed" }}
-          >
-            Renouvellement bientôt disponible
-          </button>
+          <UnlockButton label="Renouveler · 1 999 FCFA →" />
           <p className="text-center text-xs text-ink-muted">
-            Nous finalisons un nouveau fournisseur de paiement.
+            Paiement sécurisé via SasPay
           </p>
         </div>
       </div>
