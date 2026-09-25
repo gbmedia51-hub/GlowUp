@@ -51,11 +51,16 @@ export default async function RenewPage() {
         </div>
 
         <div className="mt-6 space-y-3">
-          <Link href="/pay" className="btn-primary">
-            Renouveler mon plan →
-          </Link>
+          <button
+            type="button"
+            disabled
+            className="btn-primary"
+            style={{ opacity: 0.55, cursor: "not-allowed" }}
+          >
+            Renouvellement bientôt disponible
+          </button>
           <p className="text-center text-xs text-ink-muted">
-            MTN Mobile Money · Orange Money
+            Nous finalisons un nouveau fournisseur de paiement.
           </p>
         </div>
       </div>

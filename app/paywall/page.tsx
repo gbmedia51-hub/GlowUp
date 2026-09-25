@@ -63,11 +63,17 @@ export default async function PaywallPage() {
         </ul>
 
         <div className="mt-8 space-y-3">
-          <Link href="/pay" className="btn-primary">
-            Débloquer GlowUp Pro · 1 999 FCFA →
-          </Link>
+          <button
+            type="button"
+            disabled
+            className="btn-primary"
+            style={{ opacity: 0.55, cursor: "not-allowed" }}
+          >
+            Paiement bientôt disponible
+          </button>
           <p className="text-center text-xs text-ink-muted">
-            Payer avec MTN Mobile Money ou Orange Money
+            Nous finalisons l'intégration avec un nouveau fournisseur de
+            paiement. Revenez dans quelques jours.
           </p>
         </div>
       </div>

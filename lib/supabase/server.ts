@@ -42,7 +42,7 @@ export function supabaseAdmin() {
 }
 
 // For /pro/* server components: require an active subscription.
-// Anonymous users without a subscription are redirected to /pay.
+// Anonymous users without a subscription are redirected to /paywall.
 export async function requireActiveSubscription() {
   const supabase = supabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
@@ -56,7 +56,7 @@ export async function requireActiveSubscription() {
     sub &&
     sub.status === "active" &&
     new Date(sub.expires_at).getTime() > Date.now();
-  if (!active) redirect("/pay");
+  if (!active) redirect("/paywall");
   return { supabase, user, subscription: sub! };
 }
 
